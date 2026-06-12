@@ -6,6 +6,8 @@ Agent Feishu sends Codex and Claude Code approval prompts and task status notice
 
 It is push-only. It cannot approve inside Codex or Claude Code for you. When your phone receives an approval notice, return to the current agent chat and answer `approved` or `rejected`.
 
+Unlike bridge-style tools, Agent Feishu does not run, approve, or control Codex/Claude remotely. It only pushes notices from your local agent workflow to Feishu/Lark.
+
 ## Install
 
 Windows: download `agent-feishu.exe` from GitHub Releases, then double-click it.
