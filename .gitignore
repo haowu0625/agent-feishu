@@ -2,6 +2,10 @@
 /agent-feishu
 dist/
 tmp/
+.gocache/
+.gocache2/
+.gotmp/
+.gotmp2/
 *.log
 .env
 .agent-feishu.json

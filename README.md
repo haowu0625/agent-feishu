@@ -1,40 +1,40 @@
-# Agent Feishu
+# 飞书 Agent 通知助手
 
-**Languages:** English | [简体中文](README.zh-CN.md)
+**语言:** [English](README.en.md) | 简体中文
 
-Agent Feishu sends Codex and Claude Code approval prompts and task status notices to Feishu/Lark.
+Agent Feishu 会把 Codex 和 Claude Code 的审批请求、任务完成、失败或需要关注的状态推送到飞书 / Lark。
 
-It is push-only. It cannot approve inside Codex or Claude Code for you. When your phone receives an approval notice, return to the current agent chat and answer `approved` or `rejected`.
+它只负责推送通知，不会替你在 Codex 或 Claude Code 里点击批准。手机收到审批通知后，请回到当前 agent 对话里回复 `approved` 或 `rejected`。
 
-Unlike bridge-style tools, Agent Feishu does not run, approve, or control Codex/Claude remotely. It only pushes notices from your local agent workflow to Feishu/Lark.
+不同于飞书中控台或桥接类工具，Agent Feishu 不远程运行、不替你审批、不接管 Codex / Claude。它只负责把本地 agent 工作流里的通知推送到飞书 / Lark。
 
-## Install
+## 安装
 
-Windows: download `agent-feishu.exe` from GitHub Releases, then double-click it.
+Windows：从 GitHub Releases 下载 `agent-feishu.exe`，然后双击运行。
 
-macOS: download `agent-feishu-macos.zip` from GitHub Releases. On Apple Silicon Macs, use `agent-feishu-macos-arm64`; on Intel Macs, use `agent-feishu-macos-amd64`. You can also open `Agent Feishu.app`, which runs the setup flow in Terminal.
+macOS：从 GitHub Releases 下载 `agent-feishu-macos.zip`。Apple Silicon Mac 使用 `agent-feishu-macos-arm64`，Intel Mac 使用 `agent-feishu-macos-amd64`。也可以打开 `Agent Feishu.app`，它会在 Terminal 中运行配置流程。
 
-Normal users do not need PowerShell, a local web page, localhost, a public IP, or a tunnel.
+普通用户不需要 PowerShell、本地网页、localhost、公网 IP 或内网穿透。
 
-The Windows app will:
+Windows 应用会自动完成这些事：
 
-- open the Feishu QR flow for creating or connecting a self-built app
-- save the app credentials and receiver ID locally
-- let you add project folders and append rules to `AGENTS.md` / `CLAUDE.md`
-- let you send one optional test notice
-- optionally copy itself to `%LOCALAPPDATA%\agent-feishu\agent-feishu.exe` when Windows startup is enabled
+- 打开飞书扫码流程，用于创建或连接一个飞书自建应用
+- 把 App 凭证和接收人 ID 保存在本机
+- 添加项目文件夹，并向 `AGENTS.md` / `CLAUDE.md` 写入通知规则
+- 发送一次可选的测试通知
+- 可选开启 Windows 开机启动；只有开启后才会复制自身到 `%LOCALAPPDATA%\agent-feishu\agent-feishu.exe`
 
-Closing the window hides it to the system tray. Use the window's `退出` button to quit.
+关闭窗口会隐藏到系统托盘。需要彻底退出时，请点击窗口里的 `退出`。
 
-The macOS build currently uses a terminal setup flow. It prints the Feishu QR code in Terminal, saves credentials locally, and writes Codex/Claude rules to project folders. It does not yet include the Windows native resident window.
+macOS 版本目前使用终端配置流程：它会在 Terminal 中显示飞书二维码，把凭证保存在本机，并把 Codex / Claude 规则写入项目文件夹。它暂时还没有 Windows 那种原生驻留窗口。
 
-## Configure
+## 配置
 
-Click `生成二维码` in the native app, then scan the QR code shown inside the app with the Feishu mobile app and confirm. The self-built app name is fixed as `飞书提醒agent`. The app sends messages through the Feishu IM API.
+在 Windows 原生应用里点击 `生成二维码`，然后用飞书手机端扫码并确认。自建应用名称固定为 `飞书提醒agent`。消息通过飞书 IM API 发送。
 
-Codex and Claude support is enabled by default when you add a project folder. The app writes Codex rules to `AGENTS.md` and Claude Code rules to `CLAUDE.md`.
+添加项目文件夹时，默认会同时启用 Codex 和 Claude 支持：Codex 规则写入 `AGENTS.md`，Claude Code 规则写入 `CLAUDE.md`。
 
-The generated config looks like this:
+生成的配置大致如下：
 
 ```json
 {
@@ -48,114 +48,114 @@ The generated config looks like this:
 }
 ```
 
-The default config path is:
+Windows 默认配置路径：
 
 ```text
 %USERPROFILE%\.agent-feishu.json
 ```
 
-On macOS the same config is stored at:
+macOS 默认配置路径：
 
 ```text
 ~/.agent-feishu.json
 ```
 
-Do not commit real app credentials or tokens.
+不要把真实 App 凭证或 token 提交到代码仓库。
 
-## Add Project Folders
+## 添加项目文件夹
 
-Windows: double-click `agent-feishu.exe`, then use the `项目文件夹` section in the native app.
+Windows 用户可以双击 `agent-feishu.exe`，然后在原生应用的 `项目文件夹` 区域添加项目。
 
-macOS: run setup from `Agent Feishu.app` or from Terminal, then paste project folders when prompted.
+macOS 用户可以从 `Agent Feishu.app` 或 Terminal 启动配置流程，然后按提示粘贴项目文件夹路径。
 
-The default target is `Codex + Claude`, which updates both:
+默认目标是 `Codex + Claude`，也就是同时更新：
 
 ```text
 AGENTS.md
 CLAUDE.md
 ```
 
-Advanced users can also add folders from a terminal:
+高级用户也可以在终端里添加项目：
 
 ```powershell
 agent-feishu.exe projects add "E:\path\to\project"
 ```
 
-macOS:
+macOS：
 
 ```bash
 agent-feishu projects add "/path/to/project"
 ```
 
-Choose one target:
+只写入某一个目标：
 
 ```powershell
 agent-feishu.exe projects add "E:\path\to\project" --target codex
 agent-feishu.exe projects add "E:\path\to\project" --target claude
 ```
 
-macOS:
+macOS：
 
 ```bash
 agent-feishu projects add "/path/to/project" --target codex
 agent-feishu projects add "/path/to/project" --target claude
 ```
 
-The inserted block is marked with:
+插入的规则块会带有这些标记：
 
 ```text
 <!-- BEGIN:agent-feishu -->
 <!-- END:agent-feishu -->
 ```
 
-Adding the same project again updates the existing block instead of duplicating it.
+重复添加同一个项目时，会更新已有规则块，不会重复插入。
 
-After adding project rules, start a new Codex or Claude Code session in that project for the rules to take effect reliably. Existing chats may not reload `AGENTS.md` or `CLAUDE.md` automatically.
+添加项目规则后，请在该项目中新建 Codex 或 Claude Code 会话，规则才能稳定生效。已有对话不一定会自动重新读取 `AGENTS.md` 或 `CLAUDE.md`。
 
-## Test Push
+## 测试推送
 
-Daily approval and completion notices are triggered by the Codex/Claude project rules. After setup, you can send one optional test notice from the app to confirm that Feishu delivery works.
+日常审批和完成通知由 Codex / Claude 项目规则自动触发。小型 / 简单任务默认不会发送完成通知，避免手机被琐碎操作刷屏；只有非简单任务会在最终回复前发送完成通知。配置完成后，可以在应用里发送一次测试通知，确认飞书消息能正常送达。
 
-## Approval Notice
+## 审批通知
 
-Send the exact original approval request. Do not rewrite, translate, or summarize it.
+审批通知必须发送原始审批文本，不要改写、翻译或总结。
 
 ```powershell
 @"
 Run command with escalated permissions: npm run deploy
 Justification: deploy current build after checks passed.
-"@ | agent-feishu.exe approval --stdin --agent Codex --title "Codex approval request" --risk high
+"@ | agent-feishu.exe approval --stdin --agent Codex --title "审批请求" --risk high
 ```
 
-The Feishu message includes:
+飞书消息会包含：
 
-- agent name
-- risk level
-- current working directory
-- host name
-- SHA256 of the original text
-- the original approval request
-- instruction to reply in the Codex/Claude chat
+- agent 名称
+- 风险等级
+- 当前工作目录
+- 主机名
+- 原始文本的 SHA256
+- 原始审批请求
+- 提醒用户回到 Codex / Claude 对话里回复
 
-Dry run:
+Dry run：
 
 ```powershell
 agent-feishu.exe approval --text "exact approval text" --dry-run
 ```
 
-macOS uses the same commands without `.exe`:
+macOS 命令基本一致，只是不带 `.exe`：
 
 ```bash
 agent-feishu approval --text "exact approval text" --dry-run
 ```
 
-## Task Done Notice
+## 任务状态通知
 
 ```powershell
-agent-feishu.exe done --agent Codex --status success --title "Task complete" --summary "Finished the requested work."
+agent-feishu.exe done --agent Codex --status success --title "任务完成" --summary "已完成请求的工作。"
 ```
 
-Useful statuses:
+常用状态：
 
 ```text
 success
@@ -164,76 +164,78 @@ attention
 info
 ```
 
-Add detail lines:
+添加更多说明行：
 
 ```powershell
-agent-feishu.exe done --status failed --title "Build failed" --summary "npm run build failed." --detail "Check terminal output." --detail "No files were deployed."
+agent-feishu.exe done --status failed --title "构建失败" --summary "npm run build 执行失败。" --detail "请查看终端输出。" --detail "没有部署任何文件。"
 ```
 
-macOS:
+macOS：
 
 ```bash
-agent-feishu done --agent Codex --status success --title "Task complete" --summary "Finished."
+agent-feishu done --agent Codex --status success --title "任务完成" --summary "已完成。"
 ```
 
-## Codex / Claude Instruction
+## Codex / Claude 规则
 
-The UI can append this automatically when you add a project folder. If you want to add it manually, use the block generated in:
+添加项目文件夹时，应用会自动写入规则。需要手动添加时，可以复制生成的规则片段。
+
+Windows：
 
 ```text
 %LOCALAPPDATA%\agent-feishu\AGENTS-snippet.md
 ```
 
-macOS:
+macOS：
 
 ```text
 ~/Library/Application Support/agent-feishu/AGENTS-snippet.md
 ```
 
-Codex uses `--agent Codex`; Claude Code uses `--agent Claude`. The rules tell the agent to push a Feishu notice when an approval request appears, then wait for the user to confirm in the current chat.
+Codex 使用 `--agent Codex`，Claude Code 使用 `--agent Claude`。规则会要求 agent 在审批出现时先推送飞书通知，然后等待用户回到当前对话确认。
 
-## Build From Source
+## 从源码构建
 
-Requirements:
+要求：
 
 - Go 1.22+
 
-Build:
+Windows 构建：
 
 ```powershell
 go build -trimpath -ldflags="-H windowsgui -s -w" -o dist\agent-feishu.exe .\cmd\agent-feishu
 ```
 
-macOS cross-build from Windows/PowerShell:
+在 Windows / PowerShell 中交叉构建 macOS 版本：
 
 ```powershell
 .\scripts\build-macos.ps1
 ```
 
-GitHub Actions builds Windows and macOS artifacts on every push.
+GitHub Actions 会在每次 push 后构建 Windows 和 macOS 产物。
 
-## Release
+## 发布
 
-For public releases, create a tag such as:
+公开发布时，创建一个 tag，例如：
 
 ```powershell
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.1
+git push origin v0.1.1
 ```
 
-Then attach the generated `agent-feishu.exe` and `agent-feishu-macos.zip` artifacts to the GitHub Release.
+然后把生成的 `agent-feishu.exe` 和 `agent-feishu-macos.zip` 附加到 GitHub Release。
 
-## Antivirus False Positives
+## 杀软误报说明
 
-Some antivirus tools may flag unsigned Go executables that send network requests, store local config, or optionally register a startup item. Agent Feishu is push-only and does not execute remote commands.
+部分杀软可能会拦截未签名的 Go 单文件程序，尤其是它包含联网发送消息、本地保存配置、可选开机启动这些行为时。Agent Feishu 只负责推送通知，不会远程执行命令，也不会替你审批。
 
-Before restoring a quarantined file, verify that it came from this repository's GitHub Release and compare it with `SHA256SUMS.txt` from the same release. For lower false-positive risk in production, sign the Windows executable with a trusted code-signing certificate.
+在找回被隔离文件前，请先确认文件来自本仓库的 GitHub Release，并用同一个 Release 里的 `SHA256SUMS.txt` 校验文件哈希。正式分发时，最好使用可信代码签名证书给 Windows EXE 签名，这能明显降低误报概率。
 
-## Security Notes
+## 安全说明
 
-- This tool sends text through a Feishu self-built app.
-- Store app credentials only in local config.
-- The EXE does not control Codex/Claude approval UI.
-- Avoid sending secrets inside approval text.
-- Use dry-run mode when checking payload shape.
-- Windows startup is opt-in and writes a normal current-user Run entry only when enabled.
+- 本工具会通过飞书自建应用发送文本消息。
+- App 凭证只保存在本地配置文件里。
+- EXE 不会控制 Codex / Claude 的审批 UI。
+- 不要在审批文本里发送密码、密钥或其他敏感信息。
+- 检查消息结构时，优先使用 `--dry-run`。
+- Windows 开机启动是可选项，只有用户开启时才会写入当前用户的 Run 注册表项。

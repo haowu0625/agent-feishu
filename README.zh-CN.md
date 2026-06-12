@@ -1,6 +1,6 @@
 # 飞书 Agent 通知助手
 
-**语言:** [English](README.md) | 简体中文
+**语言:** [English](README.en.md) | 简体中文
 
 Agent Feishu 会把 Codex 和 Claude Code 的审批请求、任务完成、失败或需要关注的状态推送到飞书 / Lark。
 
@@ -114,7 +114,7 @@ agent-feishu projects add "/path/to/project" --target claude
 
 ## 测试推送
 
-日常审批和完成通知由 Codex / Claude 项目规则自动触发。配置完成后，可以在应用里发送一次测试通知，确认飞书消息能正常送达。
+日常审批和完成通知由 Codex / Claude 项目规则自动触发。小型 / 简单任务默认不会发送完成通知，避免手机被琐碎操作刷屏；只有非简单任务会在最终回复前发送完成通知。配置完成后，可以在应用里发送一次测试通知，确认飞书消息能正常送达。
 
 ## 审批通知
 
@@ -124,7 +124,7 @@ agent-feishu projects add "/path/to/project" --target claude
 @"
 Run command with escalated permissions: npm run deploy
 Justification: deploy current build after checks passed.
-"@ | agent-feishu.exe approval --stdin --agent Codex --title "Codex approval request" --risk high
+"@ | agent-feishu.exe approval --stdin --agent Codex --title "审批请求" --risk high
 ```
 
 飞书消息会包含：
@@ -152,7 +152,7 @@ agent-feishu approval --text "exact approval text" --dry-run
 ## 任务状态通知
 
 ```powershell
-agent-feishu.exe done --agent Codex --status success --title "Task complete" --summary "Finished the requested work."
+agent-feishu.exe done --agent Codex --status success --title "任务完成" --summary "已完成请求的工作。"
 ```
 
 常用状态：
@@ -167,13 +167,13 @@ info
 添加更多说明行：
 
 ```powershell
-agent-feishu.exe done --status failed --title "Build failed" --summary "npm run build failed." --detail "Check terminal output." --detail "No files were deployed."
+agent-feishu.exe done --status failed --title "构建失败" --summary "npm run build 执行失败。" --detail "请查看终端输出。" --detail "没有部署任何文件。"
 ```
 
 macOS：
 
 ```bash
-agent-feishu done --agent Codex --status success --title "Task complete" --summary "Finished."
+agent-feishu done --agent Codex --status success --title "任务完成" --summary "已完成。"
 ```
 
 ## Codex / Claude 规则
@@ -219,8 +219,8 @@ GitHub Actions 会在每次 push 后构建 Windows 和 macOS 产物。
 公开发布时，创建一个 tag，例如：
 
 ```powershell
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.1
+git push origin v0.1.1
 ```
 
 然后把生成的 `agent-feishu.exe` 和 `agent-feishu-macos.zip` 附加到 GitHub Release。

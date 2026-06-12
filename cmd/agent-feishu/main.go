@@ -22,7 +22,7 @@ import (
 	"github.com/larksuite/oapi-sdk-go/v3/scene/registration"
 )
 
-var version = "0.1.0"
+var version = "0.1.1"
 
 type Config struct {
 	FeishuAppID       string   `json:"feishu_app_id,omitempty"`
@@ -824,13 +824,15 @@ func ruleBlock(exePath string, agent string) string {
 	return fmt.Sprintf(`%s
 ## Agent Feishu Notifications
 
-When an approval request appears, MUST call "%s" approval%s --stdin with the exact original approval text, then stop and wait for the user to approve or reject in this chat.
+当出现审批请求时，必须调用 "%s" approval%s --stdin，并通过 stdin 传入完整的原始审批文本，然后停止并等待用户在当前对话中批准或拒绝。
 
-Before sending the final answer for any non-trivial task, MUST call "%s" done%s with --status success and a concise status summary.
+在任何非简单任务的最终回复前，必须调用 "%s" done%s --status success，并使用中文填写 --title、--summary 和 --detail。summary 要简洁说明实际完成了什么，不要使用 Task complete / Finished 这类英文模板。
 
-If the task fails, is blocked, or needs user attention, MUST call "%s" done%s with --status failed or --status attention before replying.
+小型或简单任务不要发送完成通知，避免用琐碎操作刷屏。
 
-Do not expose Feishu app credentials or tokens. Do not summarize, translate, or rewrite approval text before sending it.
+如果任务失败、受阻或需要用户关注，必须先调用 "%s" done%s，并使用 --status failed 或 --status attention，同时用中文填写 --title、--summary 和 --detail。
+
+不要暴露飞书应用凭证或 token。发送 approval 时，不要总结、翻译或改写审批原文；发送 done 时，通知标题和说明必须使用中文。
 %s
 `, ruleBegin, exePath, agentArg, exePath, agentArg, exePath, agentArg, ruleEnd)
 }
@@ -1259,8 +1261,8 @@ Usage:
   agent-feishu ui
   agent-feishu setup
   agent-feishu projects add "E:\path\to\project"
-  agent-feishu approval --stdin --agent Codex --title "Codex approval request"
-  agent-feishu done --status success --title "Task complete" --summary "Finished."
+  agent-feishu approval --stdin --agent Codex --title "审批请求"
+  agent-feishu done --status success --title "任务完成" --summary "已完成请求的工作。"
   agent-feishu test
   agent-feishu config init
   agent-feishu config path
