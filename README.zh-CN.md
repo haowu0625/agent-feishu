@@ -111,6 +111,8 @@ agent-feishu projects add "/path/to/project" --target claude
 
 重复添加同一个项目时，会更新已有规则块，不会重复插入。
 
+添加项目规则后，请在该项目中新建 Codex 或 Claude Code 会话，规则才能稳定生效。已有对话不一定会自动重新读取 `AGENTS.md` 或 `CLAUDE.md`。
+
 ## 测试推送
 
 日常审批和完成通知由 Codex / Claude 项目规则自动触发。配置完成后，可以在应用里发送一次测试通知，确认飞书消息能正常送达。

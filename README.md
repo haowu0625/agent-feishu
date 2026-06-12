@@ -111,6 +111,8 @@ The inserted block is marked with:
 
 Adding the same project again updates the existing block instead of duplicating it.
 
+After adding project rules, start a new Codex or Claude Code session in that project for the rules to take effect reliably. Existing chats may not reload `AGENTS.md` or `CLAUDE.md` automatically.
+
 ## Test Push
 
 Daily approval and completion notices are triggered by the Codex/Claude project rules. After setup, you can send one optional test notice from the app to confirm that Feishu delivery works.
