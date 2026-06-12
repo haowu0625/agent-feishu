@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -18,6 +19,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+	"unicode/utf16"
+	"unicode/utf8"
 
 	"github.com/larksuite/oapi-sdk-go/v3/scene/registration"
 )
@@ -826,6 +829,8 @@ func ruleBlock(exePath string, agent string) string {
 
 当出现审批请求时，必须调用 "%s" approval%s --stdin，并通过 stdin 传入完整的原始审批文本，然后停止并等待用户在当前对话中批准或拒绝。
 
+如果在 Windows PowerShell 中通过管道发送中文审批原文，必须先设置 $OutputEncoding = [System.Text.UTF8Encoding]::new($false)，避免中文在进入 agent-feishu 前变成 ????。
+
 在任何非简单任务的最终回复前，必须调用 "%s" done%s --status success，并使用中文填写 --title、--summary 和 --detail。summary 要简洁说明实际完成了什么，不要使用 Task complete / Finished 这类英文模板。
 
 小型或简单任务不要发送完成通知，避免用琐碎操作刷屏。
@@ -1162,10 +1167,62 @@ func readRawText(stdin io.Reader, rawText, rawFile string, rawStdin bool) (strin
 	}
 	if rawFile != "" {
 		body, err := os.ReadFile(rawFile)
-		return string(body), err
+		return decodeRawTextBytes(body), err
 	}
 	body, err := io.ReadAll(stdin)
-	return string(body), err
+	return decodeRawTextBytes(body), err
+}
+
+func decodeRawTextBytes(body []byte) string {
+	body = bytes.TrimPrefix(body, []byte{0xef, 0xbb, 0xbf})
+	if utf8.Valid(body) {
+		return string(body)
+	}
+	if decoded, ok := decodeUTF16(body); ok {
+		return decoded
+	}
+	return string(body)
+}
+
+func decodeUTF16(body []byte) (string, bool) {
+	if len(body) < 2 {
+		return "", false
+	}
+	order := binary.ByteOrder(nil)
+	if bytes.HasPrefix(body, []byte{0xff, 0xfe}) {
+		order = binary.LittleEndian
+		body = body[2:]
+	} else if bytes.HasPrefix(body, []byte{0xfe, 0xff}) {
+		order = binary.BigEndian
+		body = body[2:]
+	} else {
+		evenZeros, oddZeros := 0, 0
+		for i, b := range body {
+			if b == 0 {
+				if i%2 == 0 {
+					evenZeros++
+				} else {
+					oddZeros++
+				}
+			}
+		}
+		switch {
+		case oddZeros > len(body)/8:
+			order = binary.LittleEndian
+		case evenZeros > len(body)/8:
+			order = binary.BigEndian
+		default:
+			return "", false
+		}
+	}
+	if len(body)%2 != 0 {
+		body = body[:len(body)-1]
+	}
+	words := make([]uint16, 0, len(body)/2)
+	for i := 0; i < len(body); i += 2 {
+		words = append(words, order.Uint16(body[i:i+2]))
+	}
+	return string(utf16.Decode(words)), true
 }
 
 func loadConfig(path string) (Config, error) {

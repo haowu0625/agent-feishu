@@ -120,6 +120,12 @@ agent-feishu projects add "/path/to/project" --target claude
 
 审批通知必须发送原始审批文本，不要改写、翻译或总结。
 
+如果在 Windows PowerShell 里手工通过管道发送中文审批文本，请先设置输出编码，避免中文在进入程序前变成 `????`：
+
+```powershell
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+```
+
 ```powershell
 @"
 Run command with escalated permissions: npm run deploy

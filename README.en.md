@@ -120,6 +120,12 @@ Daily approval and completion notices are triggered by the Codex/Claude project 
 
 Send the exact original approval request. Do not rewrite, translate, or summarize it.
 
+If you manually pipe Chinese approval text in Windows PowerShell, set the output encoding first so the text does not become `????` before it reaches the executable:
+
+```powershell
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+```
+
 ```powershell
 @"
 Run command with escalated permissions: npm run deploy
