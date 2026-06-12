@@ -30,6 +30,7 @@ const (
 	idExit      = 1016
 	idStatus    = 1017
 	idAutostart = 1018
+	idTest      = 1019
 
 	wsOverlappedWindow  = 0x00CF0000
 	wsThickFrame        = 0x00040000
@@ -70,6 +71,7 @@ const (
 	wmUser            = 0x0400
 	wmAppRegisterDone = wmUser + 1
 	wmAppQRCodeReady  = wmUser + 2
+	wmAppTestDone     = wmUser + 3
 	wmSetFont         = 0x0030
 	wmLButtonD        = 0x0203
 	wmSize            = 0x0005
@@ -478,6 +480,7 @@ func (a *guiApp) createControls(instance uintptr) {
 	create(idExit, "BUTTON", "退出", bsPushButton|bsFlat|wsTabStop, 1010, 28, 70, 34)
 
 	create(idConnect, "BUTTON", "生成二维码", bsPushButton|bsFlat|wsTabStop, 820, 186, 150, 42)
+	create(idTest, "BUTTON", "发送测试", bsPushButton|bsFlat|wsTabStop, 820, 232, 150, 38)
 	create(idReceiver, "EDIT", "", esLeft|esReadOnly|wsTabStop, 780, 272, 240, 28)
 	create(idAutostart, "BUTTON", "开机后常驻托盘", bsAutoCheckBox|wsTabStop, 780, 310, 200, 24)
 
@@ -661,6 +664,8 @@ func (a *guiApp) onCommand(id int) {
 	switch id {
 	case idConnect:
 		a.registerApp()
+	case idTest:
+		a.sendTest()
 	case idBrowse:
 		if path := browseFolder(a.hwnd); path != "" {
 			setText(a.controls[idProject], path)
@@ -764,6 +769,22 @@ func (a *guiApp) addProject() {
 		return
 	}
 	a.setStatus("项目规则已写入：" + strings.Join(results, " | "))
+}
+
+func (a *guiApp) sendTest() {
+	cfg, err := loadConfig("")
+	if err != nil || cfg.FeishuAppID == "" || cfg.FeishuAppSecret == "" || cfg.FeishuReceiveID == "" {
+		a.setStatus("请先生成二维码并完成飞书扫码连接。")
+		return
+	}
+	a.setStatus("正在发送飞书测试通知...")
+	go func() {
+		err := sendTestNotice(ioDiscardWriter{}, cfg, a.installDir, false)
+		a.mu.Lock()
+		a.lastAsyncErr = err
+		a.mu.Unlock()
+		pPostMessage.Call(a.hwnd, wmAppTestDone, 0, 0)
+	}()
 }
 
 func (a *guiApp) setStatus(text string) {
@@ -979,6 +1000,11 @@ func windowProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr {
 			activeGUI.finishRegisterApp()
 			return 0
 		}
+	case wmAppTestDone:
+		if activeGUI != nil {
+			activeGUI.finishTest()
+			return 0
+		}
 	case wmAppQRCodeReady:
 		if activeGUI != nil {
 			activeGUI.mu.Lock()
@@ -1000,6 +1026,19 @@ func windowProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr {
 	}
 	ret, _, _ := pDefWindowProc.Call(hwnd, uintptr(msg), wParam, lParam)
 	return ret
+}
+
+func (a *guiApp) finishTest() {
+	a.mu.Lock()
+	err := a.lastAsyncErr
+	a.lastAsyncErr = nil
+	a.mu.Unlock()
+	if err != nil {
+		a.setStatus("测试通知发送失败：" + err.Error())
+		messageBox(a.hwnd, err.Error(), "测试通知发送失败")
+		return
+	}
+	a.setStatus("测试通知已发送，请查看飞书。")
 }
 
 func getText(hwnd uintptr) string {

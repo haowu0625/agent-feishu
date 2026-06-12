@@ -69,6 +69,8 @@ func run(args []string, stdin io.Reader, stdout io.Writer, stderr io.Writer) err
 		return runApproval(args[1:], stdin, stdout)
 	case "done":
 		return runDone(args[1:], stdout)
+	case "test":
+		return runTest(args[1:], stdout)
 	case "projects", "project":
 		return runProjects(args[1:], stdout)
 	case "app":
@@ -194,8 +196,7 @@ func runSetup(args []string, stdin io.Reader, stdout io.Writer) error {
 			return err
 		}
 		if !strings.EqualFold(strings.TrimSpace(answer), "n") {
-			payload := buildDonePayload(cfg.DefaultAgent, "info", "Agent Feishu installed", executableFileName()+" setup completed.", installDir, nil)
-			if err := sendOrPrint(stdout, cfg, payload, false); err != nil {
+			if err := sendTestNotice(stdout, cfg, installDir, false); err != nil {
 				return err
 			}
 		}
@@ -448,7 +449,7 @@ func runApproval(args []string, stdin io.Reader, stdout io.Writer) error {
 	fs := flag.NewFlagSet("approval", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	agent := fs.String("agent", "", "agent name")
-	title := fs.String("title", "Approval request", "notice title")
+	title := fs.String("title", "审批请求", "notice title")
 	risk := fs.String("risk", "high", "risk level")
 	summary := fs.String("summary", "", "optional summary")
 	rawText := fs.String("text", "", "approval text")
@@ -486,7 +487,7 @@ func runDone(args []string, stdout io.Writer) error {
 	fs.SetOutput(io.Discard)
 	agent := fs.String("agent", "", "agent name")
 	status := fs.String("status", "success", "success, failed, attention, or info")
-	title := fs.String("title", "Task complete", "notice title")
+	title := fs.String("title", "任务完成", "notice title")
 	summary := fs.String("summary", "", "task summary")
 	detail := multiFlag{}
 	cwd := fs.String("cwd", "", "working directory")
@@ -507,6 +508,27 @@ func runDone(args []string, stdout io.Writer) error {
 
 	payload := buildDonePayload(*agent, *status, *title, *summary, *cwd, detail)
 	return sendOrPrint(stdout, cfg, payload, *dryRun)
+}
+
+func runTest(args []string, stdout io.Writer) error {
+	fs := flag.NewFlagSet("test", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	agent := fs.String("agent", "", "agent name")
+	cwd := fs.String("cwd", "", "working directory")
+	configPath := fs.String("config", "", "config path")
+	dryRun := fs.Bool("dry-run", false, "print payload without sending")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	cfg, _ := loadConfig(*configPath)
+	if *agent != "" {
+		cfg.DefaultAgent = *agent
+	}
+	if *cwd == "" {
+		*cwd, _ = os.Getwd()
+	}
+	return sendTestNotice(stdout, cfg, *cwd, *dryRun)
 }
 
 func runConfig(args []string, stdout io.Writer) error {
@@ -863,28 +885,28 @@ func appendUniquePath(paths []string, path string) []string {
 func buildApprovalPayload(agent, title, risk, summary, cwd, text string) FeishuPayload {
 	digest := sha256.Sum256([]byte(text))
 	lines := []string{
-		fmt.Sprintf("[Approval Notice] %s", title),
-		"Agent: " + agent,
-		"Risk: " + risk,
-		"CWD: " + cwd,
-		"Host: " + hostname(),
+		fmt.Sprintf("[审批请求] %s", title),
+		"来源：" + agent,
+		"风险等级：" + displayRisk(risk),
+		"工作目录：" + cwd,
+		"主机：" + hostname(),
 		"SHA256: " + hex.EncodeToString(digest[:]),
 	}
 	if strings.TrimSpace(summary) != "" {
 		lines = append(lines, "", strings.TrimSpace(summary))
 	}
-	lines = append(lines, "", "Original approval request:", text, "", "Reply in the Codex/Claude chat with: approved / rejected")
+	lines = append(lines, "", "原始审批请求：", text, "", "请回到 Codex/Claude 对话中回复：approved / rejected")
 	return textPayload(strings.Join(lines, "\n"))
 }
 
 func buildDonePayload(agent, status, title, summary, cwd string, details []string) FeishuPayload {
 	lines := []string{
 		fmt.Sprintf("[%s] %s", agent, title),
-		"Status: " + status,
-		"CWD: " + cwd,
-		"Host: " + hostname(),
-		"OS: " + runtime.GOOS + "/" + runtime.GOARCH,
-		"Time: " + time.Now().Format(time.RFC3339),
+		"状态：" + displayStatus(status),
+		"工作目录：" + cwd,
+		"主机：" + hostname(),
+		"系统：" + runtime.GOOS + "/" + runtime.GOARCH,
+		"时间：" + time.Now().Format(time.RFC3339),
 	}
 	if strings.TrimSpace(summary) != "" {
 		lines = append(lines, "", strings.TrimSpace(summary))
@@ -895,6 +917,53 @@ func buildDonePayload(agent, status, title, summary, cwd string, details []strin
 		}
 	}
 	return textPayload(strings.Join(lines, "\n"))
+}
+
+func buildTestPayload(agent, cwd string) FeishuPayload {
+	return buildDonePayload(
+		firstNonEmpty(agent, "Codex"),
+		"info",
+		"测试通知",
+		"这是一条 Agent Feishu 测试通知。收到这条消息，说明飞书推送已经配置成功。",
+		cwd,
+		nil,
+	)
+}
+
+func sendTestNotice(stdout io.Writer, cfg Config, cwd string, dryRun bool) error {
+	agent := firstNonEmpty(cfg.DefaultAgent, "Codex")
+	payload := buildTestPayload(agent, cwd)
+	return sendOrPrint(stdout, cfg, payload, dryRun)
+}
+
+func displayStatus(status string) string {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "success":
+		return "成功"
+	case "failed":
+		return "失败"
+	case "attention":
+		return "需要关注"
+	case "info":
+		return "信息"
+	default:
+		return strings.TrimSpace(status)
+	}
+}
+
+func displayRisk(risk string) string {
+	switch strings.ToLower(strings.TrimSpace(risk)) {
+	case "low":
+		return "低"
+	case "medium":
+		return "中"
+	case "high":
+		return "高"
+	case "critical":
+		return "严重"
+	default:
+		return strings.TrimSpace(risk)
+	}
 }
 
 func textPayload(text string) FeishuPayload {
@@ -1180,6 +1249,7 @@ Usage:
   agent-feishu projects add "E:\path\to\project"
   agent-feishu approval --stdin --agent Codex --title "Codex approval request"
   agent-feishu done --status success --title "Task complete" --summary "Finished."
+  agent-feishu test
   agent-feishu config init
   agent-feishu config path
 
