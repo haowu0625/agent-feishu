@@ -18,12 +18,11 @@ macOS：从 GitHub Releases 下载 `agent-feishu-macos.zip`。Apple Silicon Mac 
 
 Windows 应用会自动完成这些事：
 
-- 复制自身到 `%LOCALAPPDATA%\agent-feishu\agent-feishu.exe`
 - 打开飞书扫码流程，用于创建或连接一个飞书自建应用
 - 把 App 凭证和接收人 ID 保存在本机
 - 添加项目文件夹，并向 `AGENTS.md` / `CLAUDE.md` 写入通知规则
 - 发送一次可选的测试通知
-- 可选开启 Windows 开机启动，让它重启后继续驻留
+- 可选开启 Windows 开机启动；只有开启后才会复制自身到 `%LOCALAPPDATA%\agent-feishu\agent-feishu.exe`
 
 关闭窗口会隐藏到系统托盘。需要彻底退出时，请点击窗口里的 `退出`。
 
@@ -226,6 +225,12 @@ git push origin v0.1.0
 
 然后把生成的 `agent-feishu.exe` 和 `agent-feishu-macos.zip` 附加到 GitHub Release。
 
+## 杀软误报说明
+
+部分杀软可能会拦截未签名的 Go 单文件程序，尤其是它包含联网发送消息、本地保存配置、可选开机启动这些行为时。Agent Feishu 只负责推送通知，不会远程执行命令，也不会替你审批。
+
+在找回被隔离文件前，请先确认文件来自本仓库的 GitHub Release，并用同一个 Release 里的 `SHA256SUMS.txt` 校验文件哈希。正式分发时，最好使用可信代码签名证书给 Windows EXE 签名，这能明显降低误报概率。
+
 ## 安全说明
 
 - 本工具会通过飞书自建应用发送文本消息。
@@ -233,3 +238,4 @@ git push origin v0.1.0
 - EXE 不会控制 Codex / Claude 的审批 UI。
 - 不要在审批文本里发送密码、密钥或其他敏感信息。
 - 检查消息结构时，优先使用 `--dry-run`。
+- Windows 开机启动是可选项，只有用户开启时才会写入当前用户的 Run 注册表项。

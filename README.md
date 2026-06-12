@@ -18,12 +18,11 @@ Normal users do not need PowerShell, a local web page, localhost, a public IP, o
 
 The Windows app will:
 
-- copy itself to `%LOCALAPPDATA%\agent-feishu\agent-feishu.exe`
 - open the Feishu QR flow for creating or connecting a self-built app
 - save the app credentials and receiver ID locally
 - let you add project folders and append rules to `AGENTS.md` / `CLAUDE.md`
 - let you send one optional test notice
-- optionally enable Windows startup so it stays resident after reboot
+- optionally copy itself to `%LOCALAPPDATA%\agent-feishu\agent-feishu.exe` when Windows startup is enabled
 
 Closing the window hides it to the system tray. Use the window's `退出` button to quit.
 
@@ -224,6 +223,12 @@ git push origin v0.1.0
 
 Then attach the generated `agent-feishu.exe` and `agent-feishu-macos.zip` artifacts to the GitHub Release.
 
+## Antivirus False Positives
+
+Some antivirus tools may flag unsigned Go executables that send network requests, store local config, or optionally register a startup item. Agent Feishu is push-only and does not execute remote commands.
+
+Before restoring a quarantined file, verify that it came from this repository's GitHub Release and compare it with `SHA256SUMS.txt` from the same release. For lower false-positive risk in production, sign the Windows executable with a trusted code-signing certificate.
+
 ## Security Notes
 
 - This tool sends text through a Feishu self-built app.
@@ -231,3 +236,4 @@ Then attach the generated `agent-feishu.exe` and `agent-feishu-macos.zip` artifa
 - The EXE does not control Codex/Claude approval UI.
 - Avoid sending secrets inside approval text.
 - Use dry-run mode when checking payload shape.
+- Windows startup is opt-in and writes a normal current-user Run entry only when enabled.

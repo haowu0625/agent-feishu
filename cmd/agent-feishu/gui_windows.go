@@ -349,11 +349,16 @@ func runNativeGUI(args []string, stdout interface{}) error {
 		guiLog("runNativeGUI: mkdir error: %v", err)
 		return err
 	}
-	if err := copySelfTo(installPath); err != nil {
-		guiLog("runNativeGUI: copySelfTo error: %v", err)
-		return err
+	if isAutostartEnabled(installPath) {
+		if err := copySelfTo(installPath); err != nil {
+			guiLog("runNativeGUI: copySelfTo error: %v", err)
+			return err
+		}
+		guiLog("runNativeGUI: copySelfTo ok")
+	} else {
+		installPath = currentExecutablePath()
+		guiLog("runNativeGUI: self-copy skipped; installPath=%s", installPath)
 	}
-	guiLog("runNativeGUI: copySelfTo ok")
 	if err := writeSnippet(filepath.Join(installDir, "AGENTS-snippet.md"), installPath); err != nil {
 		guiLog("runNativeGUI: writeSnippet error: %v", err)
 		return err

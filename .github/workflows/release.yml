@@ -70,9 +70,14 @@ jobs:
           PLIST
           cd dist
           zip -r agent-feishu-macos.zip agent-feishu-macos-arm64 agent-feishu-macos-amd64 "Agent Feishu.app"
+      - name: Generate checksums
+        run: |
+          cd dist
+          shasum -a 256 agent-feishu.exe agent-feishu-macos.zip > SHA256SUMS.txt
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             dist/agent-feishu.exe
             dist/agent-feishu-macos.zip
+            dist/SHA256SUMS.txt

@@ -657,6 +657,18 @@ func copySelfTo(dest string) error {
 	return nil
 }
 
+func currentExecutablePath() string {
+	path, err := os.Executable()
+	if err != nil {
+		return installedExePath()
+	}
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return path
+	}
+	return abs
+}
+
 func writeConfig(path string, cfg Config) error {
 	body, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
