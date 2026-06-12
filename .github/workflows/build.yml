@@ -1,0 +1,92 @@
+name: build
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+      - name: Test
+        run: go test ./...
+      - name: Build Windows exe
+        run: go build -trimpath -ldflags="-H windowsgui -s -w" -o dist/agent-feishu.exe ./cmd/agent-feishu
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-feishu-windows
+          path: dist/agent-feishu.exe
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+      - name: Test
+        run: go test ./...
+      - name: Build macOS binaries
+        run: |
+          mkdir -p dist
+          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o dist/agent-feishu-macos-arm64 ./cmd/agent-feishu
+          CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o dist/agent-feishu-macos-amd64 ./cmd/agent-feishu
+      - name: Package macOS app
+        run: |
+          mkdir -p "dist/Agent Feishu.app/Contents/MacOS"
+          cp dist/agent-feishu-macos-arm64 "dist/Agent Feishu.app/Contents/MacOS/agent-feishu-arm64"
+          cp dist/agent-feishu-macos-amd64 "dist/Agent Feishu.app/Contents/MacOS/agent-feishu-amd64"
+          cat > "dist/Agent Feishu.app/Contents/MacOS/launcher" <<'SH'
+          #!/bin/sh
+          DIR="$(cd "$(dirname "$0")" && pwd)"
+          if [ "$(uname -m)" = "arm64" ]; then
+            BIN="$DIR/agent-feishu-arm64"
+          else
+            BIN="$DIR/agent-feishu-amd64"
+          fi
+          SCRIPT="/tmp/agent-feishu-setup.command"
+          printf '%s\n' '#!/bin/sh' > "$SCRIPT"
+          printf '"%s" setup\n' "$BIN" >> "$SCRIPT"
+          printf '%s\n' 'echo' 'echo "You can close this Terminal window."' >> "$SCRIPT"
+          chmod +x "$SCRIPT"
+          exec open -a Terminal "$SCRIPT"
+          SH
+          chmod +x "dist/Agent Feishu.app/Contents/MacOS/agent-feishu-arm64" "dist/Agent Feishu.app/Contents/MacOS/agent-feishu-amd64" "dist/Agent Feishu.app/Contents/MacOS/launcher"
+          cat > "dist/Agent Feishu.app/Contents/Info.plist" <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>CFBundleExecutable</key>
+            <string>launcher</string>
+            <key>CFBundleIdentifier</key>
+            <string>com.agentfeishu.notifier</string>
+            <key>CFBundleName</key>
+            <string>Agent Feishu</string>
+            <key>CFBundleDisplayName</key>
+            <string>Agent Feishu</string>
+            <key>CFBundlePackageType</key>
+            <string>APPL</string>
+            <key>CFBundleShortVersionString</key>
+            <string>0.1.0</string>
+            <key>CFBundleVersion</key>
+            <string>1</string>
+            <key>LSMinimumSystemVersion</key>
+            <string>11.0</string>
+          </dict>
+          </plist>
+          PLIST
+          cd dist
+          zip -r agent-feishu-macos.zip agent-feishu-macos-arm64 agent-feishu-macos-amd64 "Agent Feishu.app"
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-feishu-macos
+          path: dist/agent-feishu-macos.zip

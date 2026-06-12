@@ -1,0 +1,9 @@
+{
+  "feishu_app_id": "cli_xxx",
+  "feishu_app_secret": "local-only-secret",
+  "feishu_receive_id": "ou_xxx",
+  "feishu_receive_type": "open_id",
+  "feishu_tenant_brand": "feishu",
+  "default_agent": "Codex",
+  "project_folders": []
+}

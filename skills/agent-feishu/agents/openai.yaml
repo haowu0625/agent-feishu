@@ -1,0 +1,5 @@
+interface:
+  display_name: "Agent Feishu"
+  short_description: "Push agent approvals and task status to Feishu."
+  default_prompt: "Use $agent-feishu to send Feishu notices for approval prompts and task completion."
+
